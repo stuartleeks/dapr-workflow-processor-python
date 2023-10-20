@@ -1,0 +1,16 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Python: Current File with Dapr",
+			"type": "python",
+			"request": "launch",
+			"program": "app.py",
+			"cwd": "${workspaceFolder}/src/processor",
+			"console": "integratedTerminal",
+			"justMyCode": true,
+			"preLaunchTask": "processor-dapr-debug",
+			"postDebugTask": "processor-daprd-down"
+		}
+	]
+}

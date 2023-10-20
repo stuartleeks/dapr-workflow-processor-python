@@ -1,0 +1,13 @@
+version: 1
+common:
+  resourcesPath: ./components
+apps:
+  - appID: processor
+    appDirPath: src/processor
+    appPort: 8001
+    command: ["python3", "app.py"]
+    configFilePath: ../../components/appconfig.yaml
+  - appID: temp
+    appDirPath: src/temp
+    command: ["python3", "app.py"]
+    configFilePath: ../../components/appconfig.yaml

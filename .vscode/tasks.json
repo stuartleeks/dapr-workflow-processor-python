@@ -1,0 +1,16 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"appId": "processor",
+			"appPort": 8001,
+			"label": "processor-dapr-debug",
+			"type": "dapr"
+		},
+		{
+			"appId": "processor",
+			"label": "processor-daprd-down",
+			"type": "daprd-down"
+		}
+	]
+}

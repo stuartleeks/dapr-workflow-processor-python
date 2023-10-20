@@ -1,0 +1,31 @@
+apiVersion: dapr.io/v1alpha1
+kind: Resiliency
+metadata:
+  name: throttling-resiliency
+spec:
+  policies:
+    # Retries are named templates for retry configurations and are instantiated for life of the operation.
+    retries:
+      pubsubRetry:
+        policy: exponential
+        maxInterval: 5m
+        # maxRetries: 10
+    
+    circuitBreakers:
+      simpleCB:
+        maxRequests: 1
+        timeout: 30s 
+        # tune this to your needs, set low for easy testing/demoing
+        trip: consecutiveFailures >= 2
+
+  targets:
+    components:
+      pubsub: 
+        inbound:
+          retry: pubsubRetry
+          circuitBreaker: simpleCB
+
+      servicebus-pubsub:
+        inbound:
+          retry: pubsubRetry
+          circuitBreaker: simpleCB
