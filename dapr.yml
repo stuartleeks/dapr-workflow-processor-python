@@ -1,3 +1,4 @@
+# https://docs.dapr.io/developing-applications/local-development/multi-app-dapr-run/multi-app-template/
 version: 1
 common:
   resourcesPath: ./components
@@ -7,7 +8,11 @@ apps:
     appPort: 8001
     command: ["python3", "app.py"]
     configFilePath: ../../components/appconfig.yaml
-  - appID: temp
-    appDirPath: src/temp
+    appLogDestination: console
+    enableApiLogging: true
+  - appID: sender
+    appDirPath: src/sender
     command: ["python3", "app.py"]
     configFilePath: ../../components/appconfig.yaml
+    appLogDestination: console
+    enableApiLogging: true

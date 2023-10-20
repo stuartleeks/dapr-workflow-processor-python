@@ -7,7 +7,7 @@ spec:
     - name: Resiliency
       enabled: true
 
-  httpPipeline:
+  appHttpPipeline:
     handlers:
     - name: ratelimit
       type: middleware.http.ratelimit
