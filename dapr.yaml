@@ -1,9 +1,9 @@
 # https://docs.dapr.io/developing-applications/local-development/multi-app-dapr-run/multi-app-template/
 version: 1
 common:
-  resourcesPath: ./components-temp
+  resourcesPath: ./components
 apps:
-  - appID: processor
+  - appID: processor1
     appDirPath: src/processor
     appPort: 8001
     command: ["python3", "app.py"]
@@ -19,9 +19,10 @@ apps:
   - appID: workflow1
     appDirPath: src/workflow1
     appPort: 8100
+    appProtocol: http
     command: ["python3", "app.py"]
     appLogDestination: console
     enableApiLogging: true
     logLevel: debug
     env:
-      PORT: 8100
+      APP_PORT: 8100

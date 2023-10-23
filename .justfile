@@ -18,7 +18,6 @@ run-processor-sender:
 
 run-workflow1:
 	cd src/workflow1/ && \
-	dapr run --app-id workflow1 --resources-path ../../components --app-protocol http \
+	dapr run --app-id workflow1 --resources-path ../../components --app-protocol grpc \
 		--enable-api-logging --log-level debug \
 		-- python3 app.py
-	# dapr run --app-id workflow1 --resources-path ../../components --app-protocol http --config ../../components/appconfig.yaml -- python3 app.py
