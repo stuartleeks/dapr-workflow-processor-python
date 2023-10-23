@@ -1,7 +1,7 @@
 # https://docs.dapr.io/developing-applications/local-development/multi-app-dapr-run/multi-app-template/
 version: 1
 common:
-  resourcesPath: ./components
+  resourcesPath: ./components-temp
 apps:
   - appID: processor
     appDirPath: src/processor
@@ -10,9 +10,18 @@ apps:
     configFilePath: ../../components/appconfig.yaml
     appLogDestination: console
     enableApiLogging: true
-  - appID: sender
-    appDirPath: src/sender
+  # - appID: sender
+  #   appDirPath: src/sender
+  #   command: ["python3", "app.py"]
+  #   configFilePath: ../../components/appconfig.yaml
+  #   appLogDestination: console
+  #   enableApiLogging: true
+  - appID: workflow1
+    appDirPath: src/workflow1
+    appPort: 8100
     command: ["python3", "app.py"]
-    configFilePath: ../../components/appconfig.yaml
     appLogDestination: console
     enableApiLogging: true
+    logLevel: debug
+    env:
+      PORT: 8100

@@ -35,8 +35,9 @@
 	"customizations": {
 		"vscode": {
 			"extensions": [
-				"ms-azuretools.vscode-bicep"
-				"ms-azuretools.vscode-dapr"
+				"ms-azuretools.vscode-bicep",
+				"ms-azuretools.vscode-dapr",
+				"humao.rest-client"
 			]
 		}
 	},

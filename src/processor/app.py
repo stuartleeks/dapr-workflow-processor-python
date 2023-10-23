@@ -1,5 +1,7 @@
+import time
 from flask import Flask, request
 import json
+import os
 
 app = Flask(__name__)
 
@@ -8,6 +10,8 @@ app = Flask(__name__)
 def do_stuff1():
     data = request.json
     print('do_stuff1 triggered: ' + json.dumps(data), flush=True)
+
+    time.sleep(2)
     return json.dumps({'success': True}), 200, {
         'ContentType': 'application/json'}
 
@@ -18,5 +22,5 @@ def do_stuff2():
     return json.dumps({'success': True}), 200, {
         'ContentType': 'application/json'}
 
-
-app.run(port=8001)
+port = int(os.getenv("PORT", "8001"))
+app.run(port=port)

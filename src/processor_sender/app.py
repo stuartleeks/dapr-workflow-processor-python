@@ -9,7 +9,8 @@ logging.basicConfig(level=logging.INFO)
 base_url = os.getenv('BASE_URL', 'http://localhost') + ':' + os.getenv(
                     'DAPR_HTTP_PORT', '3500')
 # Adding app id as part of the header
-headers = {'dapr-app-id': 'processor', 'content-type': 'application/json'}
+headers1 = {'dapr-app-id': 'processor1', 'content-type': 'application/json'}
+headers2 = {'dapr-app-id': 'processor2', 'content-type': 'application/json'}
 
 for i in range(1, 50):
     body = {'id': i}
@@ -18,14 +19,14 @@ for i in range(1, 50):
     result = requests.post(
         url=f"{base_url}/do_stuff1",
         data=json.dumps(body),
-        headers=headers
+        headers=headers1
     )
     print(f"Response (do_stuff1 ) {result.status_code}: " + result.text, flush=True)
 
     # result = requests.post(
-    #     url=f"{base_url}/do_stuff2",
+    #     url=f"{base_url}/do_stuff",
     #     data=json.dumps(body),
-    #     headers=headers
+    #     headers=headers2
     # )
     # print(f"Response (do_stuff2) {result.status_code}: " + result.text, flush=True)
 

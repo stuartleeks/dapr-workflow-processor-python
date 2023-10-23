@@ -18,6 +18,8 @@ spec:
 
   targets:
     apps:
-      processor:
+      processor1:
         retry: retry1
+      # processor2:
+      #   retry: retry1
 

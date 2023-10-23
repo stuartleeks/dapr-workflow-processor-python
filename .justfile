@@ -2,16 +2,23 @@ default:
 	just --list
 
 run:
-	dapr run --run-file dapr.yml
+	dapr run --run-file dapr.yaml
 	
 stop:
-	dapr stop --run-file dapr.yml
+	dapr stop --run-file dapr.yaml
 
 
-run-processor:
+run-processor1:
 	cd src/processor/ && \
-	dapr run --app-port 8001 --app-id processor --resources-path ../../components --config ../../components/appconfig.yaml -- python app.py
+	dapr run --app-port 8001 --app-id processor1 --resources-path ../../components --config ../../components/appconfig.yaml -- python app.py
 
-run-sender:
-	cd src/sender/ && \
-	dapr run --app-id sender  --resources-path ../../components --app-protocol http --config ../../components/appconfig.yaml -- python3 app.py
+run-processor-sender:
+	cd src/processor_sender/ && \
+	dapr run --app-id processor_sender  --resources-path ../../components --app-protocol http --config ../../components/appconfig.yaml -- python3 app.py
+
+run-workflow1:
+	cd src/workflow1/ && \
+	dapr run --app-id workflow1 --resources-path ../../components --app-protocol http \
+		--enable-api-logging --log-level debug \
+		-- python3 app.py
+	# dapr run --app-id workflow1 --resources-path ../../components --app-protocol http --config ../../components/appconfig.yaml -- python3 app.py
