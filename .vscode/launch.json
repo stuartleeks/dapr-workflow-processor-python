@@ -2,7 +2,7 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "Python: Current File with Dapr",
+			"name": "Python: Processor with Dapr",
 			"type": "python",
 			"request": "launch",
 			"program": "app.py",
@@ -11,6 +11,17 @@
 			"justMyCode": true,
 			"preLaunchTask": "processor-dapr-debug",
 			"postDebugTask": "processor-daprd-down"
+		},
+		{
+			"name": "Python: Workflow1 with Dapr",
+			"type": "python",
+			"request": "launch",
+			"program": "app.py",
+			"cwd": "${workspaceFolder}/src/workflow1",
+			"console": "integratedTerminal",
+			"justMyCode": false,
+			"preLaunchTask": "workflow1-dapr-debug",
+			"postDebugTask": "workflow1-daprd-down"
 		}
 	]
 }

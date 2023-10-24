@@ -11,6 +11,20 @@
 			"appId": "processor",
 			"label": "processor-daprd-down",
 			"type": "daprd-down"
+		},
+		{
+			"appId": "workflow1",
+			"appPort": 8100,
+			"label": "workflow1-dapr-debug",
+			"type": "dapr",
+			"grpcPort": 50001,
+			"httpPort": 3500
+		},
+		{
+			"appId": "workflow1",
+			"label": "workflow1-daprd-down",
+			"type": "daprd-down"
 		}
+
 	]
 }

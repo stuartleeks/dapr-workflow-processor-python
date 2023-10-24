@@ -2,7 +2,12 @@
 POST http://localhost:8100/workflows
 Content-Type: application/json
 
-{"test": "test value"}
+[
+	{
+		"action": "processor1",
+		"content" : "Hello World"
+	}
+]
 
 ###
 
