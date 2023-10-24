@@ -1,5 +1,6 @@
 from dataclasses import dataclass, is_dataclass, asdict
 from datetime import timedelta
+import logging
 from dapr.clients import DaprClient
 from dapr.conf import settings
 from dapr.ext.workflow import WorkflowRuntime, DaprWorkflowContext, WorkflowActivityContext
@@ -12,6 +13,8 @@ import os
 
 app = Flask(__name__)
 dapr_client = DaprClient()
+logging.basicConfig(level=logging.INFO)
+
 
 class DataClassJSONEncoder(json.JSONEncoder):
         def default(self, o):
@@ -44,42 +47,48 @@ class ProcessingPayload():
 def processing_workflow(context: DaprWorkflowContext, input: ProcessingPayload):
     # This is the workflow orchestrator
     # Calls here must be deterministic
+    # TODO: consider whether logging makes sense here
+    logger = logging.getLogger('processing_workflow')
+
     try:
         payload = ProcessingPayload(input)
         if not context.is_replaying:
-            print(f"Processing_workflow - received new payload: {payload}", flush=True)
+            logger.info(f"Processing_workflow - received new payload: {payload}")
 
-        print(f"processing_workflow triggered (replaying={context.is_replaying}):" + payload.to_json(), flush=True)
+        logger.info(f"processing_workflow triggered (replaying={context.is_replaying}):" + payload.to_json())
 
         for action in payload.actions:
-            print(f"processing action: {action}", flush=True)
+            logger.info(f"processing action: {action}")
             response = yield context.call_activity(invoke_processor, input=action)
-            print(f"activity response: {response}", flush=True)
+            logger.info(f"activity response: {response}")
 
         return "workflow done"
     except Exception as e:
-        print(f"!!!workflow error: {e}", flush=True)
+        logger.error(f"!!!workflow error: {e}")
         raise e
 
 def invoke_processor(context: WorkflowActivityContext, input_dict):
-    print("invoke_processor triggered" + json.dumps(input_dict), flush=True)
+    logger = logging.getLogger('invoke_processor')
+    
+    logger.info("invoke_processor triggered" + json.dumps(input_dict))
     try:
         action = ProcessingAction(**input_dict)
 
         # Currently using action.name as the app_id
         # This is a simplification - imagine having a mapping and applying validation etc ;-)
         resp = dapr_client.invoke_method(app_id=action.action, method_name="process", http_verb="POST", data=action.to_json(), content_type="application/json")
-        print(f"invoke_processor completed {resp.status_code}", flush=True)
+        logger.info(f"invoke_processor completed {resp.status_code}")
         resp_data = resp.json()
         return resp_data
     except Exception as e:
-        print(f"!!!invoke_processor error: {e}", flush=True)
+        logger.error(f"!!!invoke_processor error: {e}")
         raise e
 
 @app.route('/workflows', methods=['POST'])
 def start_workflow():
+    logger = logging.getLogger('start_workflow')
     data = request.json
-    print('POST /workflows triggered: ' + json.dumps(data), flush=True)
+    logger.info('POST /workflows triggered: ' + json.dumps(data))
 
     # Here we are passing data from input to workflow - might want early validation here ;-)
     response = dapr_client.start_workflow(workflow_component="dapr", workflow_name="processing_workflow", input=data)

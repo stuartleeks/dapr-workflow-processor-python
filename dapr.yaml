@@ -10,12 +10,16 @@ apps:
     configFilePath: ../../components/appconfig.yaml
     appLogDestination: console
     enableApiLogging: true
+    env:
+      DELAY: 5
+
   # - appID: sender
   #   appDirPath: src/sender
   #   command: ["python3", "app.py"]
   #   configFilePath: ../../components/appconfig.yaml
   #   appLogDestination: console
   #   enableApiLogging: true
+
   - appID: workflow1
     appDirPath: src/workflow1
     appPort: 8100
