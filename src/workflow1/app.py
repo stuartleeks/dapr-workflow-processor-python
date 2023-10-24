@@ -70,13 +70,17 @@ def processing_workflow(context: DaprWorkflowContext, input: ProcessingPayload):
 def invoke_processor(context: WorkflowActivityContext, input_dict):
     logger = logging.getLogger('invoke_processor')
     
-    logger.info("invoke_processor triggered" + json.dumps(input_dict))
+    logger.info(f"invoke_processor triggered (wf_id: {context.workflow_id}; task_id: {context.task_id})" + json.dumps(input_dict))
     try:
         action = ProcessingAction(**input_dict)
 
         # Currently using action.name as the app_id
         # This is a simplification - imagine having a mapping and applying validation etc ;-)
-        resp = dapr_client.invoke_method(app_id=action.action, method_name="process", http_verb="POST", data=action.to_json(), content_type="application/json")
+        data = {
+            "correlation_id": f"{context.workflow_id}-{context.task_id}",
+            "content": action.content,
+        }
+        resp = dapr_client.invoke_method(app_id=action.action, method_name="process", http_verb="POST", data=json.dumps(data), content_type="application/json")
         logger.info(f"invoke_processor completed {resp.status_code}")
         resp_data = resp.json()
         return resp_data

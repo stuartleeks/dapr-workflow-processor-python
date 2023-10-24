@@ -4,6 +4,7 @@ metadata:
   name: throttling-resiliency
 scopes:
   - sender
+  - workflow1
 spec:
   policies:
     # Retries are named templates for retry configurations and are instantiated for life of the operation.

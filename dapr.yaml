@@ -10,6 +10,7 @@ apps:
     configFilePath: ../../components/appconfig.yaml
     appLogDestination: console
     enableApiLogging: true
+    appMaxConcurrency: 1
     env:
       DELAY: 5
 
