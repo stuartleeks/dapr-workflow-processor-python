@@ -21,6 +21,7 @@ apps:
     appPort: 8100
     appProtocol: http
     command: ["python3", "app.py"]
+    configFilePath: ../../components/appconfig.yaml
     appLogDestination: console
     enableApiLogging: true
     logLevel: debug
