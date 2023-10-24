@@ -5,9 +5,8 @@ from app import ProcessingAction, ProcessingPayload
 
 class TestModels(unittest.TestCase):
 
-    def test_from_dict(self):
-        dict = {
-            "actions" : [
+    def test_from_input(self):
+        input = [
                 {
                     "action" : "app1",
                     "content" : "content1"
@@ -17,8 +16,7 @@ class TestModels(unittest.TestCase):
                     "content" : "content2"
                 }
             ]
-        }
-        payload = ProcessingPayload.from_dict(dict)
+        payload = ProcessingPayload.from_input(input)
         self.assertEqual(len(payload.actions), 2)
         
         self.assertEqual(payload.actions[0].action, "app1")
@@ -26,7 +24,6 @@ class TestModels(unittest.TestCase):
 
         self.assertEqual(payload.actions[1].action, "app2")
         self.assertEqual(payload.actions[1].content, "content2")
-
 
     def test_to_json(self):
         payload = ProcessingPayload([

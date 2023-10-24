@@ -35,12 +35,12 @@ class ProcessingPayload():
     actions: list[ProcessingAction]
 
     @staticmethod
-    def from_dict(data):
+    def from_input(data):
         actions = []
-        for action in data["actions"]:
+        for action in data:
             actions.append(ProcessingAction(**action))
         return ProcessingPayload(actions)
-    
+
     def to_json(self):
         return json.dumps(self, cls=DataClassJSONEncoder)
 
@@ -51,7 +51,7 @@ def processing_workflow(context: DaprWorkflowContext, input: ProcessingPayload):
     logger = logging.getLogger('processing_workflow')
 
     try:
-        payload = ProcessingPayload(input)
+        payload = ProcessingPayload.from_input(input)
         if not context.is_replaying:
             logger.info(f"Processing_workflow - received new payload: {payload}")
 
