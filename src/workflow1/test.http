@@ -2,12 +2,19 @@
 POST http://localhost:8100/workflows
 Content-Type: application/json
 
-[
-	{
-		"action": "processor1",
-		"content" : "Hello World"
-	}
-]
+{
+	"steps": [
+		{
+			"name": "simple_test",
+			"actions" : [
+				{
+					"action": "processor1",
+					"content" : "Hello World"
+				}
+			]
+		}
+	]
+}
 
 ###
 GET http://localhost:8100/workflows/{{startSimpleWorkflow.response.body.instance_id}}
@@ -19,20 +26,36 @@ GET http://localhost:8100/workflows/{{startSimpleWorkflow.response.body.instance
 POST http://localhost:8100/workflows
 Content-Type: application/json
 
-[
-	{
-		"action": "processor1",
-		"content" : "Hello World"
-	},
-	{
-		"action": "processor1",
-		"content" : "Do stuff"
-	},
-	{
-		"action": "processor1",
-		"content" : "Do more stuff"
-	}
-]
+{
+	"steps": [
+		{
+			"name": "parallel_step",
+			"actions" : [
+				{
+					"action": "processor1",
+					"content" : "Hello World"
+				},
+				{
+					"action": "processor1",
+					"content" : "Do stuff"
+				},
+				{
+					"action": "processor1",
+					"content" : "Do more stuff"
+				}
+			]
+		},
+			{
+			"name": "final_step",
+			"actions" : [
+				{
+					"action": "processor1",
+					"content" : "Finale"
+				}
+			]
+		}
+	]
+}
 
 ###
 GET http://localhost:8100/workflows/{{startMultiStepWorkflow.response.body.instance_id}}
