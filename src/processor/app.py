@@ -3,11 +3,18 @@ from flask import Flask, request
 import json
 import logging
 import os
-
+import string
 app = Flask(__name__)
 processing_delay = float(os.getenv("DELAY", "2"))
 
 logging.basicConfig(level=logging.INFO)
+
+
+def caesar_shift(plaintext, shift):
+    alphabet = string.ascii_letters
+    shifted_alphabet = alphabet[shift:] + alphabet[:shift]
+    trans_table = str.maketrans(alphabet, shifted_alphabet)
+    return plaintext.translate(trans_table)
 
 @app.route('/process', methods=['POST'])
 def do_stuff1():
@@ -20,6 +27,7 @@ def do_stuff1():
     log_extra = {
         "correlation_id" : correlation_id
     }
+    input_content = data["content"]
 
     logger.info(f"[{correlation_id}] process triggered: " + json.dumps(data), extra=log_extra)
     
@@ -27,7 +35,7 @@ def do_stuff1():
     time.sleep(processing_delay)
     logger.info(f"[{correlation_id}] Done...", extra=log_extra)
 
-    return json.dumps({'success': True}), 200, {
+    return json.dumps({'success': True, "result": caesar_shift(input_content, 1)}), 200, {
         'ContentType': 'application/json'}
 
 port = int(os.getenv("PORT", "8001"))

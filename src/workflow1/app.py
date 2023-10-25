@@ -54,6 +54,25 @@ class ProcessingPayload:
         return ProcessingPayload(steps)
 
 
+@dataclass
+class ProcessingActionResult:
+    action: str
+    content: str
+    result: str
+
+
+@dataclass
+class ProcessingStepResult:
+    name: str
+    actions: list[ProcessingActionResult]
+
+
+@dataclass
+class ProcessingResult:
+    id: str
+    steps: list[ProcessingStepResult]
+
+
 def processing_workflow(context: DaprWorkflowContext, input):
     # This is the workflow orchestrator
     # Calls here must be deterministic
@@ -69,6 +88,7 @@ def processing_workflow(context: DaprWorkflowContext, input):
             f"processing_workflow triggered (replaying={context.is_replaying}): {payload}"
         )
 
+        step_results = []
         for step in payload.steps:
             logger.info(f"processing step: {step.name}")
             # Convert dataclass to dict before passing to call_activity
@@ -78,11 +98,38 @@ def processing_workflow(context: DaprWorkflowContext, input):
                 for action in step.actions
             ]
             yield wf.when_all(action_tasks)
+            step_results.append(action_tasks)
             logger.info(f"processing step completed: {step.name}")
+
+        # Gather results
+        results = ProcessingResult(
+            id=context.instance_id,
+            steps=[
+                ProcessingStepResult(
+                    step.name,
+                    [
+                        # step_results is an list of steps
+                        # each item is a list of action tasks
+                        # map each of these to a ProcessingActionResult
+                        ProcessingActionResult(
+                            action=action.action,
+                            content=action.content,
+                            result=step_results[step_index][action_index].get_result(),
+                        )
+                        for action_index, action in enumerate(step.actions)
+                    ],
+                )
+                for step_index, step in enumerate(payload.steps)
+            ],
+        )
+        logger.info(f"processing_workflow completed: {results}")
+
+        yield context.call_activity(save_state, input=asdict(results))
 
         return "workflow done"
     except Exception as e:
         logger.error(f"!!!workflow error: {e}")
+        # TODO - save state here showing progress and include the error(s)?
         raise e
 
 
@@ -117,6 +164,16 @@ def invoke_processor(context: WorkflowActivityContext, input_dict):
         raise e
 
 
+def save_state(context: WorkflowActivityContext, input_dict):
+    logger = logging.getLogger("save_state")
+    
+    try:
+        dapr_client.save_state("statestore", context.workflow_id, json.dumps(input_dict))
+    except Exception as e:
+        logger.error(f"!!!save_state error: {e}")
+        raise e
+
+
 @app.route("/workflows", methods=["POST"])
 def start_workflow():
     logger = logging.getLogger("start_workflow")
@@ -133,14 +190,24 @@ def start_workflow():
     return (
         {"success": True, "instance_id": response.instance_id},
         200,
-        {"ContentType": "application/json"},
+        {
+            "ContentType": "application/json",
+            "Location": f"/workflows/{response.instance_id}",
+        },
     )
 
 
 @app.route("/workflows/<instance_id>", methods=["GET"])
 def query_workflow(instance_id):
-    resp = dapr_client.get_workflow(instance_id=instance_id, workflow_component="dapr")
-    return resp.runtime_status
+    workflow_response = dapr_client.get_workflow(instance_id=instance_id, workflow_component="dapr")
+    response = {
+        "status" : workflow_response.runtime_status
+    }
+    if workflow_response.runtime_status == "Completed":
+        state = dapr_client.get_state("statestore", workflow_response.instance_id)
+        response["result"] = state.json()
+
+    return response
 
 
 def main():
@@ -149,6 +216,7 @@ def main():
     workflowRuntime = WorkflowRuntime(host, grpc_port)
     workflowRuntime.register_workflow(processing_workflow)
     workflowRuntime.register_activity(invoke_processor)
+    workflowRuntime.register_activity(save_state)
     print(f"Starting workflow runtime on {host}:{grpc_port}", flush=True)
     workflowRuntime.start()
 
