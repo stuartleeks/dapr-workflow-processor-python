@@ -66,5 +66,5 @@ do
 done
 
 tput rmcup
+echo "Workflow complete"
 echo "$resp" | jq
-
