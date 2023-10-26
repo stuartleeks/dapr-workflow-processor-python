@@ -12,3 +12,10 @@ This is a project to explore ideas for Dapr workflows calling rate-limited proce
 
 
 TODO - add services and diagram
+
+
+
+## TODO
+
+- workflow calls to processor: retries specified in resiliency.yaml
+

@@ -3,9 +3,11 @@ from flask import Flask, request
 import json
 import logging
 import os
+import random
 import string
 app = Flask(__name__)
 processing_delay = float(os.getenv("DELAY", "2"))
+failure_chance = int(os.getenv("FAILURE_CHANCE", "30"))
 
 logging.basicConfig(level=logging.INFO)
 
@@ -34,6 +36,13 @@ def do_stuff1():
     logger.info(f"[{correlation_id}] Sleeping {processing_delay}...", extra=log_extra)
     time.sleep(processing_delay)
     logger.info(f"[{correlation_id}] Done...", extra=log_extra)
+
+    if failure_chance > 0:
+        random_value = random.randint(1, 100)
+        logger.info(f"[{correlation_id}] Random value: {random_value}, failure chance: {failure_chance}", extra=log_extra)
+        if random_value <= failure_chance:
+            logger.info(f"[{correlation_id}] Failing...", extra=log_extra)
+            return json.dumps({'success': False, "error": "Failed by random chance 😢"}), 400, {'ContentType': 'application/json'}
 
     return json.dumps({'success': True, "result": caesar_shift(input_content, 1)}), 200, {
         'ContentType': 'application/json'}

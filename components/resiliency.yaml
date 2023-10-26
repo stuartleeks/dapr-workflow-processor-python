@@ -11,16 +11,16 @@ spec:
     retries:
       retry1:
         # policy: constant
-        # duration: 5s
-        # maxRetries: 10
+        # duration: 7s
+        # maxRetries: 2
         policy: exponential
         maxInterval: 5m
-        maxRetries: 10
+        maxRetries: 2
 
-  targets:
-    apps:
-      processor1:
-        retry: retry1
-      # processor2:
-      #   retry: retry1
+  # targets:
+  #   apps:
+  #     processor1:
+  #       retry: retry1
+  #     # processor2:
+  #     #   retry: retry1
 

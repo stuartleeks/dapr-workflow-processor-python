@@ -3,9 +3,9 @@ kind: Configuration
 metadata:
   name: appconfig
 spec:
-  features:
-    - name: Resiliency
-      enabled: true
+  # features:
+  #   - name: Resiliency
+  #     enabled: true
 
   appHttpPipeline:
     handlers:
