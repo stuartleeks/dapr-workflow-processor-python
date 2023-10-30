@@ -9,7 +9,9 @@ resp=$(curl \
     --request POST \
     --url http://localhost:8100/workflows \
     --header 'content-type: application/json' \
-    --data '{"steps": [{"name": "simple_test","actions" : [{"action": "processor1","content" : "Hello World"}]}]}')
+    --data '{"steps": [{"name": "parallel_step","actions" : [{"action": "processor1","content" : "Hello World"},{"action": "processor1","content" : "Do stuff"},{"action": "processor1","content" : "Do more stuff"}]},{"name": "final_step","actions" : [{"action": "processor1","content" : "Finale"}]}]}'
+    )
+    #--data '{"steps": [{"name": "simple_test","actions" : [{"action": "processor1","content" : "Hello World"}]}]}'
 
 # Get location header and body from response
 head=true

@@ -2,6 +2,7 @@ from dataclasses import dataclass, asdict
 import json
 import logging
 import requests
+import traceback
 from dapr.ext.workflow import (
     DaprWorkflowContext,
     WorkflowActivityContext,
@@ -10,6 +11,9 @@ import dapr.ext.workflow as wf
 from dapr.clients import DaprClient
 
 dapr_client = DaprClient()
+
+USE_RETRIES = True
+MAX_RETRIES = 3
 
 
 @dataclass
@@ -67,11 +71,20 @@ class ProcessingResult:
 
 def _has_errors(tasks):
     for task in tasks:
-        if task.is_failed:
+        if _is_error(task):
             return True
-        result = task.get_result()
-        if "error" in result:
-            return True
+    return False
+
+
+def _is_error(task):
+    if task.is_failed:
+        return True
+    result = task.get_result()
+    if result is None:
+        return True
+    if "error" in result:
+        return True
+    return False
 
 
 def register_workflow_components(workflowRuntime):
@@ -81,6 +94,13 @@ def register_workflow_components(workflowRuntime):
 
 
 def processing_workflow(context: DaprWorkflowContext, input):
+    fn = processing_workflow_with_retries if USE_RETRIES else processing_workflow_no_retries
+    return fn(context, input)
+    # for r in fn(context, input):
+    #     yield r
+
+
+def processing_workflow_no_retries(context: DaprWorkflowContext, input):
     # This is the workflow orchestrator
     # Calls here must be deterministic
     # TODO: consider whether logging makes sense here
@@ -92,13 +112,8 @@ def processing_workflow(context: DaprWorkflowContext, input):
         if not context.is_replaying:
             logger.info(f"Processing_workflow - received new payload: {payload}")
 
-        logger.info(
-            f"processing_workflow triggered (replaying={context.is_replaying}): {payload}"
-        )
-
         step_results = []
         for step in payload.steps:
-            logger.info(f"processing step: {step.name}")
             # Convert dataclass to dict before passing to call_activity
             # otherwise the durabletask serialisation will deserialise it as a SimpleNamespace type
             action_tasks = [
@@ -113,7 +128,6 @@ def processing_workflow(context: DaprWorkflowContext, input):
                 )
                 have_errors = True
                 break
-            logger.info(f"processing step completed: {step.name}")
 
         # Gather results
         results = ProcessingResult(
@@ -150,12 +164,116 @@ def processing_workflow(context: DaprWorkflowContext, input):
         raise e
 
 
+def processing_workflow_with_retries(context: DaprWorkflowContext, input):
+    # This is the workflow orchestrator
+    # Calls here must be deterministic
+    # TODO: consider whether logging makes sense here
+    logger = logging.getLogger("processing_workflow")
+    have_errors = False
+
+    try:
+        payload = ProcessingPayload.from_input(input)
+        if not context.is_replaying:
+            logger.info(f"Processing_workflow - received new payload: {payload}")
+
+        step_results = []
+        for step in payload.steps:
+            step_results_dic = {}  # track final results
+            attempt_count = 0
+            success = False
+            while True:
+                # Convert dataclass to dict before passing to call_activity
+                # otherwise the durabletask serialisation will deserialise it as a SimpleNamespace type
+                action_task_dict = {
+                    action_index: context.call_activity(
+                        invoke_processor, input=asdict(action)
+                    )
+                    for action_index, action in enumerate(step.actions)
+                    if action_index not in step_results_dic
+                }
+                action_tasks = action_task_dict.values()
+
+                if len(action_tasks) == 0:
+                    raise Exception("No actions to process")
+
+                yield wf.when_all(action_tasks)
+
+                # Determine whether to retry any actions
+                if _has_errors(action_tasks):
+                    attempt_count += 1
+                    if attempt_count > MAX_RETRIES:
+                        # copy all tasks to result dict (i.e. include errors)
+                        for action_index, task in action_task_dict.items():
+                            step_results_dic[action_index] = task.get_result()
+                        break
+                    else:
+                        # copy successful tasks to result dict
+                        for action_index, task in action_task_dict.items():
+                            if not _is_error(task):
+                                step_results_dic[action_index] = task.get_result()
+                        # continue to next attemp
+                        # could put a sleep in here
+                        continue
+                else:
+                    # copy all tasks to result dict
+                    for action_index, task in action_task_dict.items():
+                        step_results_dic[action_index] = task.get_result()
+                    success = True
+                    break
+
+            if len(step_results_dic) != len(step.actions):
+                raise Exception(
+                    f"Expected {len(step.actions)} results but got {len(step_results_dic)} (step={step.name}))"
+                )
+
+            step_results.append(step_results_dic)
+            if not success:
+                logger.info(
+                    f"processing step completed with errors - skipping any remaining work: {step.name}"
+                )
+                break
+
+        # Gather results
+        results = ProcessingResult(
+            id=context.instance_id,
+            status="Completed" if success else "Failed",
+            steps=[
+                ProcessingStepResult(
+                    step.name,
+                    [
+                        # step_results is an list of steps
+                        # each item is a list of action tasks
+                        # map each of these to a ProcessingActionResult
+                        ProcessingActionResult(
+                            action=action.action,
+                            content=action.content,
+                            result=step_results[step_index][action_index]
+                            if len(step_results) > step_index
+                            else None,
+                        )
+                        for action_index, action in enumerate(step.actions)
+                    ],
+                )
+                for step_index, step in enumerate(payload.steps)
+            ],
+        )
+        logger.info(f"processing_workflow completed: {results}")
+
+        yield context.call_activity(save_state, input=asdict(results))
+
+        return "workflow done"
+    except Exception as e:
+        logger.error(f"!!!workflow error: {traceback.format_exception(e)}")
+        # TODO - save state here showing progress and include the error(s)?
+        raise e
+
+
 def invoke_processor(context: WorkflowActivityContext, input_dict):
     logger = logging.getLogger("invoke_processor")
 
     try:
         logger.info(
-            f"invoke_processor triggered (wf_id: {context.workflow_id}; task_id: {context.task_id})"
+            f"invoke_processor (wf_id: {context.workflow_id}; task_id: {context.task_id}): triggered"
             + json.dumps(input_dict)
         )
         action = ProcessingAction(**input_dict)
@@ -176,20 +294,29 @@ def invoke_processor(context: WorkflowActivityContext, input_dict):
         # )
         resp = requests.post(
             url=f"http://localhost:3500/v1.0/invoke/{action.action}/method/process",
-            json=body,
+            data=json.dumps(body),
             headers={"Content-Type": "application/json"},
         )
-        logger.info(f"invoke_processor completed {resp.status_code}")
+        logger.info(f"invoke_processor (wf_id: {context.workflow_id}; task_id: {context.task_id}): completed {resp.status_code}")
         if resp.ok:
             resp_data = resp.json()
+            return resp_data
         else:
-            resp_data = {"error": resp.text, "status_code": resp.status_code}
-        return resp_data
+            resp_data = {"error": _json_or_text(resp), "status_code": resp.status_code}
+            return resp_data
+
     except Exception as e:
         logger.error(f"!!!invoke_processor error: {e}")
         # return an error type as a result rather than throwing as
         # the workflow will be marked as failed otherwise
         return {"error": str(e)}  # TODO likely don't want to expose raw errors
+
+
+def _json_or_text(resp: requests.Response):
+    try:
+        return resp.json()
+    except:
+        return resp.text
 
 
 def save_state(context: WorkflowActivityContext, input_dict):
