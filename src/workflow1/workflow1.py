@@ -1,6 +1,7 @@
 from dataclasses import dataclass, asdict
 import json
 import logging
+import requests
 from dapr.ext.workflow import (
     DaprWorkflowContext,
     WorkflowActivityContext,
@@ -64,13 +65,19 @@ class ProcessingResult:
     steps: list[ProcessingStepResult]
 
 
-def has_errors(tasks):
+def _has_errors(tasks):
     for task in tasks:
         if task.is_failed:
             return True
         result = task.get_result()
         if "error" in result:
             return True
+
+
+def register_workflow_components(workflowRuntime):
+    workflowRuntime.register_workflow(processing_workflow)
+    workflowRuntime.register_activity(invoke_processor)
+    workflowRuntime.register_activity(save_state)
 
 
 def processing_workflow(context: DaprWorkflowContext, input):
@@ -100,7 +107,7 @@ def processing_workflow(context: DaprWorkflowContext, input):
             ]
             yield wf.when_all(action_tasks)
             step_results.append(action_tasks)
-            if has_errors(action_tasks):
+            if _has_errors(action_tasks):
                 logger.info(
                     f"processing step completed with errors - skipping any remaining work: {step.name}"
                 )
@@ -159,15 +166,24 @@ def invoke_processor(context: WorkflowActivityContext, input_dict):
             "correlation_id": f"{context.workflow_id}-{context.task_id}",
             "content": action.content,
         }
-        resp = dapr_client.invoke_method(
-            app_id=action.action,
-            method_name="process",
-            http_verb="POST",
-            data=json.dumps(body),
-            content_type="application/json",
+        # wanted to use dapr_client.invoke_method but it obscures the response status code
+        # resp = dapr_client.invoke_method(
+        #     app_id=action.action,
+        #     method_name="process",
+        #     http_verb="POST",
+        #     data=json.dumps(body),
+        #     content_type="application/json",
+        # )
+        resp = requests.post(
+            url=f"http://localhost:3500/v1.0/invoke/{action.action}/method/process",
+            json=body,
+            headers={"Content-Type": "application/json"},
         )
         logger.info(f"invoke_processor completed {resp.status_code}")
-        resp_data = resp.json()
+        if resp.ok:
+            resp_data = resp.json()
+        else:
+            resp_data = {"error": resp.text, "status_code": resp.status_code}
         return resp_data
     except Exception as e:
         logger.error(f"!!!invoke_processor error: {e}")

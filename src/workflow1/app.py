@@ -9,7 +9,7 @@ from flask import Flask, request
 import json
 import os
 
-from workflow1 import processing_workflow, invoke_processor, save_state
+from workflow1 import processing_workflow, invoke_processor, save_state, register_workflow_components
 
 
 app = Flask(__name__)
@@ -58,9 +58,7 @@ def main():
     host = settings.DAPR_RUNTIME_HOST
     grpc_port = settings.DAPR_GRPC_PORT
     workflowRuntime = WorkflowRuntime(host, grpc_port)
-    workflowRuntime.register_workflow(processing_workflow)
-    workflowRuntime.register_activity(invoke_processor)
-    workflowRuntime.register_activity(save_state)
+    register_workflow_components(workflowRuntime)
     print(f"Starting workflow runtime on {host}:{grpc_port}", flush=True)
     workflowRuntime.start()
 
