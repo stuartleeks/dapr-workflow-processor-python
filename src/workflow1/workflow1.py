@@ -1,6 +1,7 @@
 from dataclasses import dataclass, asdict
 import json
 import logging
+import os
 import requests
 import traceback
 from dapr.ext.workflow import (
@@ -12,7 +13,7 @@ from dapr.clients import DaprClient
 
 dapr_client = DaprClient()
 
-USE_RETRIES = True
+USE_RETRIES = os.getenv("USE_RETRIES", "false").lower() == "true"
 MAX_RETRIES = 3
 
 
@@ -54,6 +55,7 @@ class ProcessingActionResult:
     action: str
     content: str
     result: str
+    attempt_count: int
 
 
 @dataclass
@@ -94,7 +96,11 @@ def register_workflow_components(workflowRuntime):
 
 
 def processing_workflow(context: DaprWorkflowContext, input):
-    fn = processing_workflow_with_retries if USE_RETRIES else processing_workflow_no_retries
+    fn = (
+        processing_workflow_with_retries
+        if USE_RETRIES
+        else processing_workflow_no_retries
+    )
     return fn(context, input)
     # for r in fn(context, input):
     #     yield r
@@ -146,6 +152,7 @@ def processing_workflow_no_retries(context: DaprWorkflowContext, input):
                             result=step_results[step_index][action_index].get_result()
                             if len(step_results) > step_index
                             else None,
+                            attempt_count=1,  # no retries, so always a single attempt ;-)
                         )
                         for action_index, action in enumerate(step.actions)
                     ],
@@ -179,7 +186,7 @@ def processing_workflow_with_retries(context: DaprWorkflowContext, input):
         step_results = []
         for step in payload.steps:
             step_results_dic = {}  # track final results
-            attempt_count = 0
+            attempt_count = 1
             success = False
             while True:
                 # Convert dataclass to dict before passing to call_activity
@@ -204,20 +211,38 @@ def processing_workflow_with_retries(context: DaprWorkflowContext, input):
                     if attempt_count > MAX_RETRIES:
                         # copy all tasks to result dict (i.e. include errors)
                         for action_index, task in action_task_dict.items():
-                            step_results_dic[action_index] = task.get_result()
+                            action = step.actions[action_index]
+                            step_results_dic[action_index] = ProcessingActionResult(
+                                action=action.action,
+                                content=action.content,
+                                result=task.get_result(),
+                                attempt_count=attempt_count - 1,  # already incremented
+                            )
                         break
                     else:
                         # copy successful tasks to result dict
                         for action_index, task in action_task_dict.items():
                             if not _is_error(task):
-                                step_results_dic[action_index] = task.get_result()
+                                action = step.actions[action_index]
+                                step_results_dic[action_index] = ProcessingActionResult(
+                                    action=action.action,
+                                    content=action.content,
+                                    result=task.get_result(),
+                                    attempt_count=attempt_count,  # already incremented
+                                )
                         # continue to next attemp
                         # could put a sleep in here
                         continue
                 else:
                     # copy all tasks to result dict
                     for action_index, task in action_task_dict.items():
-                        step_results_dic[action_index] = task.get_result()
+                        action = step.actions[action_index]
+                        step_results_dic[action_index] = ProcessingActionResult(
+                            action=action.action,
+                            content=action.content,
+                            result=task.get_result(),
+                            attempt_count=attempt_count,
+                        )
                     success = True
                     break
 
@@ -241,17 +266,15 @@ def processing_workflow_with_retries(context: DaprWorkflowContext, input):
                 ProcessingStepResult(
                     step.name,
                     [
-                        # step_results is an list of steps
-                        # each item is a list of action tasks
-                        # map each of these to a ProcessingActionResult
+                        step_results[step_index][action_index]
+                        for action_index, action in enumerate(step.actions)
+                    ] if step_index < len(step_results) else [
                         ProcessingActionResult(
                             action=action.action,
                             content=action.content,
-                            result=step_results[step_index][action_index]
-                            if len(step_results) > step_index
-                            else None,
-                        )
-                        for action_index, action in enumerate(step.actions)
+                            result=None,
+                            attempt_count=0)
+                        for action in step.actions
                     ],
                 )
                 for step_index, step in enumerate(payload.steps)
@@ -292,16 +315,21 @@ def invoke_processor(context: WorkflowActivityContext, input_dict):
         #     data=json.dumps(body),
         #     content_type="application/json",
         # )
+
+        dapr_http_port = os.getenv("DAPR_HTTP_PORT", "3500")
         resp = requests.post(
-            url=f"http://localhost:3500/v1.0/invoke/{action.action}/method/process",
+            url=f"http://localhost:{dapr_http_port}/v1.0/invoke/{action.action}/method/process",
             data=json.dumps(body),
             headers={"Content-Type": "application/json"},
         )
-        logger.info(f"invoke_processor (wf_id: {context.workflow_id}; task_id: {context.task_id}): completed {resp.status_code}")
+        logger.info(
+            f"invoke_processor (wf_id: {context.workflow_id}; task_id: {context.task_id}): completed {resp.status_code}"
+        )
         if resp.ok:
             resp_data = resp.json()
             return resp_data
         else:
+            logger.error(f"invoke_processor failed: {resp.status_code}; {resp.text}")
             resp_data = {"error": _json_or_text(resp), "status_code": resp.status_code}
             return resp_data
 

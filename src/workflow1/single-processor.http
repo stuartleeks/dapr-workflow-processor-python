@@ -1,3 +1,4 @@
+# Start a simple job
 # @name startSimpleWorkflow
 POST http://localhost:8100/workflows
 Content-Type: application/json
@@ -17,10 +18,13 @@ Content-Type: application/json
 }
 
 ###
+
+# Get the status of the job started above
 GET http://localhost:8100/workflows/{{startSimpleWorkflow.response.body.instance_id}}
 
 
 ###
+# Start a job with multiple steps
 
 # @name startMultiStepWorkflow
 POST http://localhost:8100/workflows
@@ -58,6 +62,9 @@ Content-Type: application/json
 }
 
 ###
+
+# Get the status of the job started above
+
 GET http://localhost:8100/workflows/{{startMultiStepWorkflow.response.body.instance_id}}
 
 

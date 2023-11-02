@@ -13,7 +13,6 @@ def invoke_via_api():
                         'DAPR_HTTP_PORT', '3500')
     # Adding app id as part of the header
     headers1 = {'dapr-app-id': 'processor1', 'content-type': 'application/json'}
-    headers2 = {'dapr-app-id': 'processor2', 'content-type': 'application/json'}
 
     for i in range(1, 50):
         body = {'id': i}

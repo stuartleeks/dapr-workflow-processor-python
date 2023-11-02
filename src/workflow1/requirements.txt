@@ -1,3 +1,4 @@
 dapr
 dapr-ext-workflow
 Flask
+requests

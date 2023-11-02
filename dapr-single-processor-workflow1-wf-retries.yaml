@@ -6,30 +6,24 @@ apps:
   - appID: processor1
     appDirPath: src/processor
     appPort: 8001
+    daprHttpPort: 3500
     command: ["python3", "app.py"]
-    configFilePath: ../../components/appconfig.yaml
+    configFilePath: ../../components/config-1rps.yaml
     appLogDestination: console
     enableApiLogging: true
-    appMaxConcurrency: 1
     env:
-      DELAY: 5
-      FAILURE_CHANCE: 100
-
-  # - appID: sender
-  #   appDirPath: src/sender
-  #   command: ["python3", "app.py"]
-  #   configFilePath: ../../components/appconfig.yaml
-  #   appLogDestination: console
-  #   enableApiLogging: true
+      DELAY: 2
+      FAILURE_CHANCE: 30
 
   - appID: workflow1
     appDirPath: src/workflow1
     appPort: 8100
     appProtocol: http
     command: ["python3", "app.py"]
-    configFilePath: ../../components/appconfig.yaml
+    configFilePath: ../../components/config-no-resiliency.yaml
     appLogDestination: console
     enableApiLogging: true
     logLevel: debug
     env:
       APP_PORT: 8100
+      USE_RETRIES: true # enable workflow-level retries
