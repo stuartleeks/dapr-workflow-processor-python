@@ -1,4 +1,5 @@
 from dataclasses import dataclass, asdict
+from datetime import timedelta
 import json
 import logging
 import os
@@ -15,6 +16,7 @@ dapr_client = DaprClient()
 
 USE_RETRIES = os.getenv("USE_RETRIES", "false").lower() == "true"
 MAX_RETRIES = 3
+RETRY_SLEEP = 3
 
 
 @dataclass
@@ -230,8 +232,11 @@ def processing_workflow_with_retries(context: DaprWorkflowContext, input):
                                     result=task.get_result(),
                                     attempt_count=attempt_count,  # already incremented
                                 )
-                        # continue to next attemp
-                        # could put a sleep in here
+                        
+                        # Insert logic to handle failures here
+                        # In this example, we're going to suspend the workflow for RETRY_SLEEP seconds 
+                        # before resuming to continue to the next attempt
+                        yield context.create_timer(context.current_utc_datetime + timedelta(seconds=RETRY_SLEEP))
                         continue
                 else:
                     # copy all tasks to result dict
@@ -322,19 +327,20 @@ def invoke_processor(context: WorkflowActivityContext, input_dict):
             data=json.dumps(body),
             headers={"Content-Type": "application/json"},
         )
-        logger.info(
-            f"invoke_processor (wf_id: {context.workflow_id}; task_id: {context.task_id}): completed {resp.status_code}"
-        )
         if resp.ok:
+            logger.info(
+                f"invoke_processor (wf_id: {context.workflow_id}; task_id: {context.task_id}): ✅ completed {resp.status_code}"
+            )
             resp_data = resp.json()
             return resp_data
         else:
-            logger.error(f"invoke_processor failed: {resp.status_code}; {resp.text}")
+            emoji = "⏳" if resp.status_code == 429 else "❌"
+            logger.error(f"invoke_processor failed: {emoji} {resp.status_code}; {resp.text}")
             resp_data = {"error": _json_or_text(resp), "status_code": resp.status_code}
             return resp_data
 
     except Exception as e:
-        logger.error(f"!!!invoke_processor error: {e}")
+        logger.error(f"invoke_processor (wf_id: {context.workflow_id}; task_id: {context.task_id}) - failed with: {e}")
         # return an error type as a result rather than throwing as
         # the workflow will be marked as failed otherwise
         return {"error": str(e)}  # TODO likely don't want to expose raw errors

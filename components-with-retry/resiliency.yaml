@@ -10,17 +10,15 @@ spec:
     # Retries are named templates for retry configurations and are instantiated for life of the operation.
     retries:
       retry1:
-        # policy: constant
-        # duration: 7s
+        policy: constant
+        duration: 2s
+        maxRetries: 3
+        # policy: exponential
+        # maxInterval: 5m
         # maxRetries: 2
-        policy: exponential
-        maxInterval: 5m
-        maxRetries: 2
 
-  # targets:
-  #   apps:
-  #     processor1:
-  #       retry: retry1
-  #     # processor2:
-  #     #   retry: retry1
+  targets:
+    apps:
+      processor1:
+        retry: retry1
 

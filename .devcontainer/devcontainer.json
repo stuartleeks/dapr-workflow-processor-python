@@ -38,7 +38,8 @@
 				"ms-azuretools.vscode-bicep",
 				"ms-azuretools.vscode-dapr",
 				"ms-python.black-formatter",
-				"humao.rest-client"
+				"humao.rest-client",
+				"yzhang.markdown-all-in-one"
 			]
 		}
 	},

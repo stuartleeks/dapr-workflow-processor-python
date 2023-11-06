@@ -7,3 +7,6 @@ spec:
     handlers:
     - name: ratelimit-1rps
       type: middleware.http.ratelimit
+  features:
+    - name: Resiliency
+      enabled: false

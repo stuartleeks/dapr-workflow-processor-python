@@ -20,7 +20,6 @@ apps:
     appPort: 8100
     appProtocol: http
     command: ["python3", "app.py"]
-    configFilePath: ../../components/config-no-resiliency.yaml
     appLogDestination: console
     enableApiLogging: true
     logLevel: debug

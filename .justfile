@@ -10,6 +10,12 @@ run-single-processor-workflow1-no-retries:
 stop-single-processor-workflow1-no-retries:
 	dapr stop --run-file dapr-single-processor-workflow1-no-retries.yaml
 
+run-single-processor-workflow1-dapr-retries:
+	dapr run --run-file dapr-single-processor-workflow1-dapr-retries.yaml
+	
+stop-single-processor-workflow1-dapr-retries:
+	dapr stop --run-file dapr-single-processor-workflow1-dapr-retries.yaml
+
 run-single-processor-workflow1-wf-retries:
 	dapr run --run-file dapr-single-processor-workflow1-wf-retries.yaml
 	
@@ -33,3 +39,7 @@ run-svc-workflow1:
 	dapr run --app-id workflow1 --resources-path ../../components --app-protocol grpc \
 		--enable-api-logging --log-level debug \
 		-- python3 app.py
+
+
+clean-dapr-logs:
+	find . -type d -name ".dapr" | xargs rm -rf
