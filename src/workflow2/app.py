@@ -9,7 +9,7 @@ from flask import Flask, request
 import json
 import os
 
-from workflow1 import register_workflow_components
+from workflow2 import register_workflow_components
 
 
 app = Flask(__name__)
@@ -52,6 +52,38 @@ def query_workflow(instance_id):
         response = {"status": workflow_response.runtime_status}
 
     return response
+
+
+@app.route("/raise-event", methods=["POST"])
+def raise_workflow_event():
+    logger = logging.getLogger("raise_workflow_event")
+    data = request.json
+    logger.info("POST /raise-event triggered: " + json.dumps(data))
+
+    instance_id = data.get("instance_id")
+    if not instance_id:
+        raise Exception("instance_id not found in data")
+
+    correlation_id = data.get("correlation_id")
+    if not correlation_id:
+        raise Exception("correlation_id not found in data")
+
+    result = data.get("response")
+    if not result:
+        raise Exception("response not found in data")
+
+    dapr_client.raise_workflow_event(
+        instance_id=instance_id,
+        workflow_component="dapr",
+        event_name=correlation_id,
+        event_data=result
+    )
+    return {"success": True}
+
+
+@app.route("/healthz", methods=["GET"])
+def healthz():
+    return "OK"
 
 
 def main():

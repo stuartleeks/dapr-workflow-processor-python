@@ -23,6 +23,19 @@ stop-single-processor-workflow1-wf-retries:
 	dapr stop --run-file dapr-single-processor-workflow1-wf-retries.yaml
 
 
+run-single-processor-workflow2-simple:
+	dapr run --run-file dapr-single-processor-workflow2-simple.yaml
+	
+stop-single-processor-workflow2-simple:
+	dapr stop --run-file dapr-single-processor-workflow2-simple.yaml
+
+run-single-processor-workflow2-consumer-concurrency:
+	dapr run --run-file dapr-single-processor-workflow2-consumer-concurrency.yaml
+	
+stop-single-processor-workflow2-consumer-concurrency:
+	dapr stop --run-file dapr-single-processor-workflow2-consumer-concurrency.yaml
+
+
 ############################################################################
 # recipes for running services individually
 

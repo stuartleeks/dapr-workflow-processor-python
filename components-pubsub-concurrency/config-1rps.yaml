@@ -1,0 +1,12 @@
+apiVersion: dapr.io/v1alpha1
+kind: Configuration
+metadata:
+  name: appconfig
+spec:
+  appHttpPipeline:
+    handlers:
+    - name: ratelimit-1rps
+      type: middleware.http.ratelimit
+  features:
+    - name: Resiliency
+      enabled: false

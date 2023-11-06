@@ -12,5 +12,7 @@ spec:
     value: localhost:6379
   - name: redisPassword
     value: ""
+  - name: concurrency
+    value: 1
   - name: redeliverInterval
     value: 10s
