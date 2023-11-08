@@ -1,30 +1,37 @@
 # https://docs.dapr.io/developing-applications/local-development/multi-app-dapr-run/multi-app-template/
 version: 1
 common:
-  resourcesPath: ./components-pubsub-concurrency
+  resourcesPath: ./components
 apps:
   - appID: processor1
     appDirPath: src/processor
     appPort: 8001
     daprHttpPort: 3500
     command: ["python3", "app.py"]
-    configFilePath: ../../components-pubsub-concurrency/config-1rps.yaml
+    configFilePath: ../../components/config-1rps.yaml
     appLogDestination: console
     enableApiLogging: true
     env:
+      PORT: 8001
       DELAY: 2
       FAILURE_CHANCE: 30
 
-  - appID: processing-consumer
-    appDirPath: src/processing_consumer
+  - appID: processor2
+    appDirPath: src/processor
+    appPort: 8002
+    daprHttpPort: 3501
     command: ["python3", "app.py"]
-    appProtocol: grpc
-    appPort: 41234
+    configFilePath: ../../components-with-retry/config-1rps.yaml
+    appLogDestination: console
+    enableApiLogging: true
     env:
-      APP_PORT: 41234
+      PORT: 8002
+      DELAY: 2
+      FAILURE_CHANCE: 30
+      SHIFT_AMOUNT: 2
 
-  - appID: workflow2
-    appDirPath: src/workflow2
+  - appID: workflow1
+    appDirPath: src/workflow1
     appPort: 8100
     appProtocol: http
     command: ["python3", "app.py"]
@@ -33,3 +40,4 @@ apps:
     logLevel: debug
     env:
       APP_PORT: 8100
+      USE_RETRIES: true # enable workflow-level retries

@@ -181,7 +181,7 @@ def invoke_processor(context: WorkflowActivityContext, input_dict):
 
     try:
         logger.info(
-            f"invoke_processor (wf_id: {context.workflow_id}; task_id: {context.task_id}): triggered"
+            f"invoke_processor (wf_id: {context.workflow_id}; task_id: {context.task_id}): ⚡ triggered"
             + json.dumps(input_dict)
         )
         action = ProcessingAction(**input_dict)

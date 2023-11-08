@@ -1,19 +1,34 @@
 # https://docs.dapr.io/developing-applications/local-development/multi-app-dapr-run/multi-app-template/
 version: 1
 common:
-  resourcesPath: ./components-with-retry
+  resourcesPath: ./components
 apps:
   - appID: processor1
     appDirPath: src/processor
     appPort: 8001
     daprHttpPort: 3500
     command: ["python3", "app.py"]
+    configFilePath: ../../components/config-1rps.yaml
+    appLogDestination: console
+    enableApiLogging: true
+    env:
+      PORT: 8001
+      DELAY: 2
+      FAILURE_CHANCE: 30
+
+  - appID: processor2
+    appDirPath: src/processor
+    appPort: 8002
+    daprHttpPort: 3501
+    command: ["python3", "app.py"]
     configFilePath: ../../components-with-retry/config-1rps.yaml
     appLogDestination: console
     enableApiLogging: true
     env:
+      PORT: 8002
       DELAY: 2
       FAILURE_CHANCE: 30
+      SHIFT_AMOUNT: 2
 
   - appID: workflow1
     appDirPath: src/workflow1

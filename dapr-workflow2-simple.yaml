@@ -12,11 +12,20 @@ apps:
     appLogDestination: console
     enableApiLogging: true
     env:
+      PORT: 8001
       DELAY: 2
       FAILURE_CHANCE: 30
 
-  - appID: workflow1
-    appDirPath: src/workflow1
+  - appID: processing-consumer
+    appDirPath: src/processing_consumer
+    command: ["python3", "app.py"]
+    appProtocol: grpc
+    appPort: 41234
+    env:
+      APP_PORT: 41234
+
+  - appID: workflow2
+    appDirPath: src/workflow2
     appPort: 8100
     appProtocol: http
     command: ["python3", "app.py"]
@@ -25,4 +34,3 @@ apps:
     logLevel: debug
     env:
       APP_PORT: 8100
-      USE_RETRIES: false

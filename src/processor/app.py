@@ -9,6 +9,7 @@ import string
 app = Flask(__name__)
 processing_delay = float(os.getenv("DELAY", "2"))
 failure_chance = int(os.getenv("FAILURE_CHANCE", "30"))
+shift_amount = int(os.getenv("SHIFT_AMOUNT", "1"))
 
 logging.basicConfig(level=logging.INFO)
 
@@ -62,11 +63,12 @@ def do_stuff1():
             )
 
     return (
-        json.dumps({"success": True, "result": caesar_shift(input_content, 1)}),
+        json.dumps({"success": True, "result": caesar_shift(input_content, shift_amount)}),
         200,
         {"ContentType": "application/json"},
     )
 
 
 port = int(os.getenv("PORT", "8001"))
+print(f"Starting processor on port {port}", flush=True  )
 app.run(port=port)
