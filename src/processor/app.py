@@ -47,7 +47,7 @@ def do_stuff1():
             extra=log_extra,
         )
         if random_value <= failure_chance:
-            logger.info(f"[{correlation_id}] Failing...", extra=log_extra)
+            logger.info(f"[{correlation_id}] Failing...😢", extra=log_extra)
             return (
                 # message and errorCode fields are set as the Dapr python client SDK 
                 # looks for these and surfaces them in the raised exception
